@@ -19,22 +19,13 @@ class SiswaController extends Controller
     {
         // show all
         // $data = siswa::all();
+        $this->authorize('viewAny', Siswa::class);
 
-        $data = DB::table('siswas')->orderBy('created_at', 'desc')->paginate(5);
-        return view('siswa/index', compact('data'));
+
+        $data = DB::table('siswas')->orderBy('kelas', 'asc')->orderBy('jurusan', 'asc')->paginate(5);
+                return view('siswa/index', compact('data'));
 
         // $data = DB::table('siswas')->orderBy('created_at', 'desc')->paginate(5);
-
-        // // Pastikan $data benar-benar terdefinisi sebelum dikirim ke view
-        // if(isset($data)) {
-        //     return view('siswa/index', compact('data'));
-        // } else {
-        //     // Tindakan penanganan jika $data tidak terdefinisi, misalnya, kembalikan pesan error
-        //     return "Terjadi kesalahan saat memuat data siswa.";
-        // }
-
-
-
         // $data = DB::table('siswas')
         //     ->join('mapel', 'siswas.nis', '=', 'mapel.nis')
         //     ->join('nilai', 'siswas.nis', '=', 'nilai.nis')
@@ -63,6 +54,8 @@ class SiswaController extends Controller
      */
     public function create()
     {
+        $this->authorize('create', Siswa::class);
+
         return view('siswa/create');
     }
 
@@ -71,12 +64,13 @@ class SiswaController extends Controller
      */
     public function store(Request $request)
     {
-
+        
         $validated = $request->validate([
             'nis' => 'required|unique:siswas|numeric|regex:/^\d{12}$/',
             'nama_siswa' => 'required',
             'kelas' => 'required',
             'jurusan' => 'required',
+            'jenis_kelamin' => 'required',
             'foto'=>'mimes:jpeg,jpg,png,gif',
             'dokumen'=>'mimes:pdf,docx'
         ], [
@@ -87,6 +81,7 @@ class SiswaController extends Controller
             'nama_siswa.required' => 'nama siswa harus diisi.',
             'kelas.required' => 'kelas harus diisi.',
             'jurusan.required' => 'jurusan harus diisi.',
+            'jenis_kelamin.required' => 'jenis kelamin harus diisi.',
             'foto.mimes'=>'Foto Hanya Bisa Berekstensi jpeg,jpg,png,gif',
             'dokumen.mimes'=>'Dokumen Hanya Bisa Berekstensi pdf,docx'
         ]);
@@ -119,7 +114,7 @@ class SiswaController extends Controller
             
         } else {
             // Menetapkan foto default jika tidak ada file yang diunggah
-            $data->foto = 'default.png';
+            $data->foto = 'default.jpg';
 
         }
         
@@ -138,8 +133,13 @@ class SiswaController extends Controller
 
         }
 
+        $notif = [
+            'message' => $data->nama_siswa . ' Berhasil Ditambahkan',
+            'alert-type' => 'success'
+        ];
+
         $data->save();
-        return redirect('siswa')->with('success', $data->nama_siswa .' berhasil ditambahkan');
+        return redirect('siswa')->with($notif);
     }
 
     /**
@@ -148,8 +148,20 @@ class SiswaController extends Controller
     public function show(string $nis)
     {
 
+        $this->authorize('view', Siswa::class);
+
         $data = Siswa::find($nis);
-             return view('siswa.show', compact('data'));
+
+        $notif = [
+            'message' => 'Siswa Tidak ditemukan',
+            'alert-type' => 'error'
+        ];
+
+        if ($data) {
+            return view('siswa.show', compact('data'));
+        } else {
+            return redirect()->route('siswa.index')->with($notif);
+        }
 
             // show dengan nilai
             // $data = Siswa::with('nilai')->find($nis);
@@ -166,7 +178,9 @@ class SiswaController extends Controller
      */
     public function edit(string $nis)
     {
-        $data = siswa::find($nis); // Mengambil data siswa berdasarkan nis
+        $data = Siswa::find($nis); // Mengambil data siswa berdasarkan nis
+
+        $this->authorize('update', Siswa::class);
 
         if ($data) {
             return view('siswa.edit', compact('data')); // Tampilkan formulir pengeditan dengan data siswa
@@ -179,100 +193,104 @@ class SiswaController extends Controller
      * Update the specified resource in storage.
      */
     public function update(Request $request, string $nis)
-    {
+{
+    // validasi data
+    $validated = $request->validate([
+        'nis' => 'required|numeric|regex:/^\d{12}$/',
+        'nama_siswa' => 'required',
+        'kelas' => 'required',
+        'jurusan' => 'required',
+        'jenis_kelamin' => 'required',
+        'foto' => 'mimes:jpeg,jpg,png,gif',
+        'dokumen' => 'mimes:pdf,docx'
+    ], [
+        'nis.required' => 'NIS harus diisi.',
+        'nis.regex' => 'NIS harus memiliki 12 karakter.',
+        'nis.numeric' => 'NIS harus berisi angka.',
+        'nama_siswa.required' => 'Nama siswa harus diisi.',
+        'kelas.required' => 'Kelas harus diisi.',
+        'jurusan.required' => 'Jurusan harus diisi.',
+        'jenis_kelamin.required' => 'Jenis kelamin harus diisi.',
+        'foto.mimes' => 'Foto hanya bisa berekstensi jpeg, jpg, png, gif',
+        'dokumen.mimes' => 'Dokumen hanya bisa berekstensi pdf, docx'
+    ]);
 
-        // validasi data
-        $validated = $request->validate([
-            'nis' => 'required||numeric|regex:/^\d{12}$/',
-            'nama_siswa' => 'required',
-            'kelas' => 'required',
-            'jurusan' => 'required',
-            'foto'=>'mimes:jpeg,jpg,png,gif',
-            'dokumen'=>'mimes:pdf,docx'
-        ], [
-            'nis.required' => 'NIS harus diisi.',
-            'nis.regex' => 'NIS harus memiliki 12 karakter.',
-            'nis.numeric' => 'NIS harus berisi angka.',
-            'nama_siswa.required' => 'nama siswa harus diisi.',
-            'kelas.required' => 'kelas harus diisi.',
-            'jurusan.required' => 'jurusan harus diisi.',
-            'foto.mimes'=>'Foto Hanya Bisa Berekstensi jpeg,jpg,png,gif',
-            'dokumen.mimes'=>'Dokumen Hanya Bisa Berekstensi pdf,docx'
-        ]);
+    // Temukan data siswa berdasarkan NIS
+    $data = Siswa::find($nis);
 
-        $data = Siswa::find($nis);
+    // Otorisasi update
+    $this->authorize('update', Siswa::class);
 
-        $data->nis = $request->input('nis');
+    // Set data siswa dengan nilai dari request
+    $data->nis = $request->input('nis');
+    $data->nama_siswa = $request->input('nama_siswa');
+    $data->kelas = $request->input('kelas');
+    $data->jurusan = $request->input('jurusan');
+    $data->jenis_kelamin = $request->input('jenis_kelamin');
 
-        $data->nama_siswa = $request->input('nama_siswa');
+    // FOTO
+    if ($request->hasFile('foto')) {
+        $fotoBaru = $request->file('foto');
+        $ext = $fotoBaru->getClientOriginalExtension();
+        $namaFotoBaru = time() . '.' . $ext;
 
-        $data->kelas = $request->input('kelas');
+        $pathBerkasLama = public_path('foto/' . $data->foto);
+        $fotoBaru->move(public_path('foto'), $namaFotoBaru);
 
-        $data->jurusan = $request->input('jurusan');
-
-        $data->jenis_kelamin = $request->input('jenis_kelamin');
-
-        // FOTO
-            if ($request->hasFile('foto')) {
-                $fotoBaru = $request->file('foto');
-                $ext = $fotoBaru->getClientOriginalExtension();
-                $namaFotoBaru = time() . '.' . $ext;
-        
-                // Tentukan path berkas yang akan dihapus (berkas lama)
-                $pathBerkasLama = public_path('foto/' . $data->foto);
-        
-                // Simpan berkas baru ke lokasi yang diinginkan di server
-                $fotoBaru->move(public_path('foto'), $namaFotoBaru);
-        
-                // Hapus berkas lama jika berkas lama ada
-                if (file_exists($pathBerkasLama)) {
-                    unlink($pathBerkasLama);
-                }
-        
-                // Update kolom 'foto' dalam database dengan nama berkas baru
-                $data->foto = $namaFotoBaru;
-            } else {
-                // Menetapkan foto default jika tidak ada file yang diunggah
-                $data->foto = 'default.png';
-            }
-
-        // DOKUMEN
-         if ($request->hasFile('dokumen')) {
-            $dokumenBaru = $request->file('dokumen');
-            $ext = $dokumenBaru->getClientOriginalExtension();
-            $namadokumenBaru = time() . '.' . $ext;
-    
-            // Tentukan path berkas yang akan dihapus (berkas lama)
-            $pathBerkasLama = public_path('dokumen/' . $data->dokumen);
-    
-            // Simpan berkas baru ke lokasi yang diinginkan di server
-            $dokumenBaru->move(public_path('dokumen'), $namadokumenBaru);
-    
-            // Hapus berkas lama jika berkas lama ada
-            if (file_exists($pathBerkasLama)) {
-                unlink($pathBerkasLama);
-            }
-    
-            // Update kolom 'dokumen' dalam database dengan nama berkas baru
-            $data->dokumen = $namadokumenBaru;
-        }   else {
-            // Menetapkan dokumen default jika tidak ada file yang diunggah
-            $data->dokumen = 'default.pdf';
+        if (file_exists($pathBerkasLama)) {
+            unlink($pathBerkasLama);
         }
 
-        $data->save();
-        return redirect('siswa')->with('success', $data->nama_siswa .' berhasil diupdate');
+        $data->foto = $namaFotoBaru;
+    } else {
+        $data->foto = 'default.jpg';
     }
+
+    // DOKUMEN
+    if ($request->hasFile('dokumen')) {
+        $dokumenBaru = $request->file('dokumen');
+        $ext = $dokumenBaru->getClientOriginalExtension();
+        $namadokumenBaru = time() . '.' . $ext;
+
+        $pathBerkasLama = public_path('dokumen/' . $data->dokumen);
+        $dokumenBaru->move(public_path('dokumen'), $namadokumenBaru);
+
+        if (file_exists($pathBerkasLama)) {
+            unlink($pathBerkasLama);
+        }
+
+        $data->dokumen = $namadokumenBaru;
+    } else {
+        $data->dokumen = 'default.pdf';
+    }
+
+    // Cek nilai request setelah proses upload
+
+    // Simpan perubahan
+    $data->save();
+
+    // Redirect ke halaman siswa dengan pesan notifikasi
+    $notif = [
+        'message' => $data->nama_siswa .' Berhasil Diedit',
+        'alert-type' => 'success'
+    ];
+
+    return redirect('siswa')->with($notif);
+}
+
 
     /**
      * Remove the specified resource from storage.
      */
     public function destroy($nis)
     {
+
         $data = siswa::where('nis', $nis)->first();
+
+        $this->authorize('delete', Siswa::class);
     
         // menghapus foto dari direktori kecuali default.png
-        if ($data->foto !== 'default.png') {
+        if ($data->foto !== 'default.jpg') {
             File::delete(public_path('foto').'/'.$data->foto);
         }
         
@@ -280,9 +298,14 @@ class SiswaController extends Controller
         if ($data->dokumen !== 'default.pdf') {
             File::delete(public_path('dokumen').'/'.$data->dokumen);
         }
-    
+        
+        $notif = [
+            'message' => $data->nama_siswa . ' Berhasil Dihapus',
+            'alert-type' => 'success'
+        ];
+
         $data->delete();
-        return back()->with('success',  $data->nama_siswa .' berhasil dihapus');
+        return back()->with($notif);
     }
     
     // app/Http/Controllers/SiswaController.php

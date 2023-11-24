@@ -6,14 +6,13 @@
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
                     <a href="{{ route('siswa.index') }}">
-                        <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
+                        <img src="{{ asset('logo/logo.png') }}" alt="Logo" class="block h-9 w-auto fill-current text-gray-800" />
                     </a>
                 </div>
-
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
                     <x-nav-link :href="route('siswa.index')" :active="request()->routeIs('siswa.index')">
-                        {{ __('siswa.index') }}
+                        {{ __('siswa') }}
                     </x-nav-link>
                 </div>
             </div>

@@ -16,6 +16,7 @@ class MapelController extends Controller
      */
     public function index()
     {
+        $this->authorize('viewAny', Mapel::class);
 
         $data = DB::table('mapel')->orderBy('created_at', 'desc')->paginate(5);
         return view('mapel/index', compact('data'));
@@ -27,6 +28,8 @@ class MapelController extends Controller
      */
     public function create()
     {
+        $this->authorize('create', Mapel::class);
+
         return view('mapel/create');
     }
 
@@ -47,14 +50,20 @@ class MapelController extends Controller
 
         $data = new mapel();
 
+        $this->authorize('create', Mapel::class);
+
         // DATA Mapel
         $data->kode_mapel = $request->input('kode_mapel');
 
         $data->nama_mapel = $request->input('nama_mapel');
 
+        $notif = [
+            'message' => $data->nama_mapel . ' Berhasil Ditambahkan',
+            'alert-type' => 'success'
+        ];
 
         $data->save();
-        return redirect('/mapel')->with('success', $data->nama_mapel .' berhasil ditambahkan');
+        return redirect('/mapel')->with($notif);
 
     }
 
@@ -72,6 +81,8 @@ class MapelController extends Controller
     public function edit(string $kode_mapel)
     {
         $data = mapel::find($kode_mapel); // Mengambil data siswa berdasarkan ID
+
+        $this->authorize('update', Mapel::class);
 
         if ($data) {
             return view('mapel.edit', compact('data')); // Tampilkan formulir pengeditan dengan data siswa
@@ -96,14 +107,20 @@ class MapelController extends Controller
 
         $data = mapel::find($kode_mapel);
 
+        $this->authorize('update', Mapel::class);
+
         // DATA Mapel
         $data->kode_mapel = $request->input('kode_mapel');
 
         $data->nama_mapel = $request->input('nama_mapel');
 
+        $notif = [
+            'message' => $data->nama_mapel . ' Berhasil Diedit',
+            'alert-type' => 'success'
+        ];
 
         $data->save();
-        return redirect('/mapel')->with('success', $data->nama_mapel .' berhasil diperbarui');
+        return redirect('/mapel')->with($notif);
 
     }
 
@@ -114,8 +131,15 @@ class MapelController extends Controller
     {
         $data = mapel::where('kode_mapel', $kode_mapel)->first();
 
+        $this->authorize('delete', Mapel::class);
+
+        $notif = [
+            'message' => $data->nama_mapel . ' Berhasil Dihapus',
+            'alert-type' => 'success'
+        ];
+
         $data->delete();
-        return back()->with('success',  $data->nama_mapel .' berhasil dihapus');
+        return back()->with($notif);
 
     }
 }

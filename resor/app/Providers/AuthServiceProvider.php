@@ -3,6 +3,13 @@
 namespace App\Providers;
 
 // use Illuminate\Support\Facades\Gate;
+use App\Models\Mapel;
+use App\Models\Nilai;
+use App\Models\Siswa;
+use App\Policies\MapelPolicy;
+use App\Policies\NilaiPolicy;
+use App\Policies\SiswaPolicy;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 
 class AuthServiceProvider extends ServiceProvider
@@ -13,7 +20,9 @@ class AuthServiceProvider extends ServiceProvider
      * @var array<class-string, class-string>
      */
     protected $policies = [
-        //
+        Siswa::class => SiswaPolicy::class,
+        Mapel::class => MapelPolicy::class,
+        Nilai::class => NilaiPolicy::class,
     ];
 
     /**
@@ -21,6 +30,6 @@ class AuthServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        
     }
 }

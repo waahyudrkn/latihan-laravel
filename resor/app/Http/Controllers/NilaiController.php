@@ -14,26 +14,38 @@ class NilaiController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
-    {
-        $data = DB::table('nilai')
+   /**
+ * Display a listing of the resource.
+ */
+public function index(Request $request)
+{
+    $this->authorize('viewAny', Nilai::class);
+
+    $orderBy = $request->input('order_by', 'siswas.nama_siswa');
+    $orderDirection = $request->input('order_direction', 'asc');
+
+    $data = DB::table('nilai')
         ->join('siswas', 'nilai.nis', '=', 'siswas.nis')
         ->join('mapel', 'nilai.kode_mapel', '=', 'mapel.kode_mapel')
         ->select('siswas.nis', 'siswas.nama_siswa', 'siswas.kelas', 'siswas.jurusan', 'mapel.kode_mapel', 'mapel.nama_mapel', 'nilai.nilai', 'nilai.id')
-        ->orderBy('siswas.nama_siswa', 'desc')
+        ->orderBy($orderBy, $orderDirection)
         ->paginate(10);
-            
-           
-    
-        return view('nilai/index')->with('data', $data);
-    }
+
+    return view('nilai/index')->with('data', $data);
+}
+
 
     /**
      * Show the form for creating a new resource.
      */
     public function create()
     {
-        return view('nilai/create');
+        $this->authorize('create', Nilai::class);
+
+        $mapel = Mapel::all();
+
+
+        return view('nilai/create', compact('mapel'));
 
     }
 
@@ -43,18 +55,23 @@ class NilaiController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'nis' => 'required',
-            'kode_mapel' => 'required',
-            'nilai' => 'required',
+            'nis' => 'required|exists:siswas,nis',
+            'kode_mapel' => 'required|exists:mapel,kode_mapel',
+            'nilai' => 'required|numeric|max:100',
             
         ], [
             'nis.required' => 'nis harus diisi',
+            'nis.exists' => 'NIS tidak ditemukan dalam database siswa.',
+            'kode_mapel.exists' => 'kode mapel tidak ditemukan dalam database siswa.',
             'kode_mapel.required' => 'kode mapel harus diisi.',
             'kode_mapel.unique' => 'kode mapel Ini Sudah Terdaftar.',
             'nilai.required' => 'nilai harus diisi',
+            'nilai.max' => 'nilai tidak bisa melebihi 100',
         ]);
 
-        $data = new nilai();
+        $data = new Nilai();
+
+        $this->authorize('create', Nilai::class);
 
         // DATA Mapel
         $data->nis = $request->input('nis');
@@ -63,8 +80,13 @@ class NilaiController extends Controller
 
         $data->nilai = $request->input('nilai');
 
+        $notif = [
+            'message' =>  'Nilai Berhasil Ditambahkan',
+            'alert-type' => 'success'
+        ];
+
         $data->save();
-        return redirect('/nilai')->with('success', 'nilai berhasil ditambahkan');
+        return redirect('/nilai')->with($notif);
     }
 
     /**
@@ -80,10 +102,14 @@ class NilaiController extends Controller
      */
     public function edit($id)
     {
-        $data = nilai::find($id); // Mengambil data siswa berdasarkan ID
+        $mapel = Mapel::all();
+
+        $data = Nilai::find($id); // Mengambil data siswa berdasarkan ID
+
+        $this->authorize('update', Nilai::class);
 
         if ($data) {
-            return view('nilai.edit', compact('data')); // Tampilkan formulir pengeditan dengan data siswa
+            return view('nilai.edit', compact('data','mapel')); // Tampilkan formulir pengeditan dengan data siswa
         } else {
             return redirect()->route('nilai.index')->with('error', 'Siswa tidak ditemukan');
         }
@@ -105,7 +131,9 @@ class NilaiController extends Controller
             'nilai.required' => 'nilai harus diisi',
         ]);
 
-        $data = nilai::find($id);
+        $data = Nilai::find($id);
+
+        $this->authorize('update', Nilai::class);
 
         // DATA Mapel
         $data->nis = $request->input('nis');
@@ -114,8 +142,13 @@ class NilaiController extends Controller
 
         $data->nilai = $request->input('nilai');
 
+        $notif = [
+            'message' =>  'Nilai Berhasil Diedit',
+            'alert-type' => 'success'
+        ];
+
         $data->save();
-        return redirect('/nilai')->with('success', 'nilai berhasil diperbarui');
+        return redirect('/nilai')->with($notif);
     }
 
     /**
@@ -125,8 +158,15 @@ class NilaiController extends Controller
     {
         $data = nilai::where('id', $id)->first();
 
+        $this->authorize('delete', Nilai::class);
+
+        $notif = [
+            'message' =>  'Nilai Berhasil Dihapus',
+            'alert-type' => 'success'
+        ];
+
         $data->delete();
-        return back()->with('success', ' data nilai berhasil dihapus'); 
+        return back()->with($notif); 
     }
 // function search nilai
 //     public function search(Request $request)

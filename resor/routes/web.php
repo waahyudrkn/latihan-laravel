@@ -22,9 +22,11 @@ Route::get('/', function () {
         return view('auth/login');
 });
 
-Route::get('/siswa', function () {
-    return view('siswa.index');
-})->middleware(['auth', 'verified'])->name('siswa');
+Route::get('/maindashboard', function () {
+    return view('maindashboard');
+})->middleware(['auth', 'verified'])->name('maindashboard');
+
+
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
